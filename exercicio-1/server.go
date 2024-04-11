@@ -54,6 +54,6 @@ func main() {
 			os.Exit(1)
 		}
 
-		slog.Info("Sent message")
+		slog.Info("Sent response", slog.String("resp", string(resp)))
 	}
 }

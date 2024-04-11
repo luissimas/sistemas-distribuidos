@@ -18,13 +18,14 @@ func main() {
 	slog.Info("Created dealer")
 
 	// Sending the message.
-	err = dealer.SendFrame([]byte("Hello"), goczmq.FlagNone)
+	msg := []byte("Hello")
+	err = dealer.SendFrame(msg, goczmq.FlagNone)
 	if err != nil {
 		slog.Error("Could not send frame", slog.Any("error", err))
 		os.Exit(1)
 	}
 
-	slog.Info("Sent message")
+	slog.Info("Sent message", slog.String("msg", string(msg)))
 
 	// Receiving the response.
 	resp, err := dealer.RecvMessage()
