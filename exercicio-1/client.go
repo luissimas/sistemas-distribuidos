@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+	// Creating the Dealer (client).
 	dealer, err := goczmq.NewDealer("tcp://127.0.0.1:6969")
 	if err != nil {
 		slog.Error("Could not create dealer", slog.Any("error", err))
@@ -16,6 +17,7 @@ func main() {
 
 	slog.Info("Created dealer")
 
+	// Sending the message.
 	err = dealer.SendFrame([]byte("Hello"), goczmq.FlagNone)
 	if err != nil {
 		slog.Error("Could not send frame", slog.Any("error", err))
@@ -24,6 +26,7 @@ func main() {
 
 	slog.Info("Sent message")
 
+	// Receiving the response.
 	resp, err := dealer.RecvMessage()
 	if err != nil {
 		slog.Error("Could not receive message", slog.Any("error", err))
