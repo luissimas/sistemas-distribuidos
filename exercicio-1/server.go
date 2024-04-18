@@ -3,6 +3,7 @@ package main
 import (
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/zeromq/goczmq"
 )
@@ -20,6 +21,8 @@ func main() {
 	defer router.Destroy()
 
 	slog.Info("Created router")
+	durations := []time.Duration{}
+	var average time.Duration
 
 	// Receiving messages in a infinite loop.
 	for {
@@ -27,6 +30,7 @@ func main() {
 		// routing id assigned by ZeroMQ and the second element is the
 		// message itself.
 		req, err := router.RecvMessage()
+		start := time.Now()
 		if err != nil {
 			slog.Error("Could not receive message", slog.Any("error", err))
 			os.Exit(1)
@@ -49,11 +53,13 @@ func main() {
 		// Send the first response. The flag goczmq.FlagNone signals
 		// that this is the last frame of the message.
 		err = router.SendFrame(resp, goczmq.FlagNone)
+		duration := time.Since(start)
 		if err != nil {
 			slog.Error("Could not send response", slog.Any("error", err))
 			os.Exit(1)
 		}
-
-		slog.Info("Sent response", slog.String("resp", string(resp)))
+		durations = append(durations, duration)
+		average = average + ((duration - average) / time.Duration(len(durations)))
+		slog.Info("Sent response", slog.String("resp", string(resp)), slog.Duration("processing_time", duration), slog.Duration("average", average))
 	}
 }
