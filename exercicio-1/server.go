@@ -55,6 +55,6 @@ func main() {
 
 		durations = append(durations, duration)
 		average = average + ((duration - average) / time.Duration(len(durations)))
-		slog.Info("Sent response", slog.String("resp", string(respText)), slog.Duration("processing_time", duration), slog.Duration("average", average))
+		slog.Info("Sent response", slog.Any("resp", resp), slog.Duration("processing_time", duration), slog.Duration("average", average))
 	}
 }
