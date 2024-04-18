@@ -5,4 +5,5 @@ Trabalhos e exercícios desenvolvidos ao longo da disciplina de Sistemas Distrib
 ## Integrantes
 
 Luís Augusto Simas do Nascimento - 790828
+Letícia Suellen Farias Machado - 790945
 TODO
