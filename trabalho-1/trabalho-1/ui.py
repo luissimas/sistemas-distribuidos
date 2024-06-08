@@ -1,4 +1,20 @@
-from tkinter import E, END, N, S, W, Button, Entry, Event, Frame, Label, Tk, mainloop
+from threading import Thread
+from tkinter import (
+    E,
+    END,
+    LEFT,
+    N,
+    S,
+    W,
+    Button,
+    Entry,
+    Event,
+    Frame,
+    Label,
+    Tk,
+    mainloop,
+)
+from client import Client
 from PIL import ImageTk, Image
 from cv2 import VideoCapture, cvtColor, COLOR_BGR2RGBA
 import structlog
@@ -22,20 +38,25 @@ camera = Label(master=video_frame)
 camera.grid(row=0, column=0)
 
 
+message_client = Client(topic="messages")
+
+
 def send_message():
     msg = message_entry.get()
     message_entry.delete(0, END)
-    logger.debug("Sending message", msg=msg)
+    message_client.send(msg)
 
 
+message_list = Label(master=chat_frame, justify=LEFT)
 message_entry = Entry(master=chat_frame)
 message_entry.bind("<Return>", lambda _: send_message())
 message_button = Button(master=chat_frame, text="Send", command=send_message)
+message_list.grid(row=0, column=0, columnspan=2, sticky=N + W)
 message_entry.grid(row=1, column=0, sticky=S)
 message_button.grid(row=1, column=1, sticky=S)
 
 
-def update_video():
+def capture_video():
     _, frame = capture.read()
     img = cvtColor(frame, COLOR_BGR2RGBA)
     # logger.debug("Capturing video frame")
@@ -43,11 +64,13 @@ def update_video():
     imgtk = ImageTk.PhotoImage(image=Image.fromarray(img))
     camera.imgtk = imgtk
     camera.configure(image=imgtk)
-    camera.after(10, update_video)
+    camera.after(10, capture_video)
 
 
-# for i in range(10):
-#     Label(master=chat_frame, text=f"Message {i}").pack()
+def recv_loop():
+    while True:
+        user, msg = message_client.recv()
+        message_list["text"] += f"{user}: {msg}\n"
 
 
 def handle_keypress(event: Event):
@@ -62,5 +85,8 @@ def handle_click(event: Event):
 window.bind("<Button-1>", handle_click)
 camera.bind("<Button-1>", lambda e: logger.debug("Handled camera click", tkevent=e))
 
-update_video()
-mainloop()
+if __name__ == "__main__":
+    Thread(target=recv_loop).start()
+    message_client.connect()
+    capture_video()
+    mainloop()
