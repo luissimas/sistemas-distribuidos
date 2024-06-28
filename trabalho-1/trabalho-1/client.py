@@ -1,40 +1,32 @@
+from getpass import getuser
+from typing import Tuple
 import zmq
 import structlog
-from threading import Thread
 
-logger = structlog.get_logger()
-context = zmq.Context()
+logger = structlog.get_logger(__name__)
 
-logger.info("Connecting to broker")
 
-pub_socket = context.socket(zmq.PUB)
-sub_socket = context.socket(zmq.SUB)
-pub_socket.connect("tcp://localhost:4001")
-sub_socket.connect("tcp://localhost:4000")
+class Client:
+    def __init__(self, topic: str):
+        self.context = zmq.Context()
+        self.topic = topic.encode()
+        self.username = getuser()
+        self.pub_socket = self.context.socket(zmq.PUB)
+        self.sub_socket = self.context.socket(zmq.SUB)
+        self.sub_socket.setsockopt(zmq.SUBSCRIBE, self.topic)
 
-logger.info("Connected to broker")
+    def connect(self):
+        logger.info("Connecting to broker")
+        self.pub_socket.connect("tcp://localhost:4001")
+        self.sub_socket.connect("tcp://localhost:4000")
+        logger.info("Connected to broker")
 
-topic = input("Topic: ").encode()
-username = input("Username: ")
-
-sub_socket.setsockopt(zmq.SUBSCRIBE, topic)
-
-def recv():
-    while True:
-        msg = sub_socket.recv_multipart()
+    def recv(self) -> Tuple[str, str]:
+        msg = self.sub_socket.recv_multipart()
         logger.info("Received message", msg=msg)
+        return msg[1].decode(), msg[2].decode()
 
-def send():
-    while True:
-        msg = input("> ")
-        pub_socket.send_multipart([topic, f"{username}: {msg}".encode()])
-
-
-recv_thread = Thread(target=recv)
-pub_thread = Thread(target=send)
-
-recv_thread.start()
-pub_thread.start()
-
-recv_thread.join()
-pub_thread.join()
+    def send(self, msg: str):
+        full_msg = [self.topic, self.username.encode(), msg.encode()]
+        self.pub_socket.send_multipart(full_msg)
+        logger.debug("Sent message", msg=full_msg)
