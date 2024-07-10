@@ -1,15 +1,17 @@
 import tkinter as tk
-from os import sendfile
+from getpass import getuser
 from typing import Callable
 
 import structlog
-from client import Client, Message
+from client import Client, Message, MessageType
 
 logger = structlog.get_logger(__name__)
 
 
 class Chat(tk.Frame):
-    def __init__(self, master: tk.Tk, send_message: Callable[[bytes], None]):
+    """The chat user interface."""
+
+    def __init__(self, master: tk.Tk, send_message: Callable[[str], None]):
         super().__init__(master=master, borderwidth=1, padx=10, pady=10, bg="blue")
         super().grid(row=0, column=1, sticky=tk.E + tk.W + tk.N + tk.S)
         self.message_list = tk.Label(master=self, justify=tk.LEFT)
@@ -32,27 +34,37 @@ class Chat(tk.Frame):
     def _handle_message_entry_submit(self):
         contents = self.message_entry.get()
         self.message_entry.delete(0, tk.END)
-        self.send_message(contents.encode())
+        self.send_message(contents)
 
 
 class Application:
+    """The main application."""
+
     def __init__(self, broker_address: str):
         self.root = tk.Tk()
+        self.username = getuser()
         self.broker_address = broker_address
-        self.message_client = Client(
+        self.client = Client(
             broker_address=broker_address,
             topic="room",
             on_message_received=self._handle_received_message,
         )
-        self.chat = Chat(self.root, send_message=self.message_client.publish)
+        self.chat = Chat(self.root, send_message=self._handle_send_message)
 
     def start(self):
+        """Start the application main loop."""
         logger.info(
             "Starting the main application.", broker_address=self.broker_address
         )
-        self.message_client.connect()
-        self.message_client.start_receiving()
+        self.client.connect()
+        self.client.start_receiving()
         self.root.mainloop()
 
     def _handle_received_message(self, msg: Message):
         self.chat.append_message(msg)
+
+    def _handle_send_message(self, content: str):
+        msg = Message(
+            type=MessageType.TEXT, sender=self.username, content=content.encode()
+        )
+        self.client.send(msg)

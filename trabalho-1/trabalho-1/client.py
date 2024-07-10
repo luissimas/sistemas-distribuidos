@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from getpass import getuser
+from enum import StrEnum
 from threading import Thread
 from typing import Callable
 
@@ -9,14 +9,21 @@ import zmq
 logger = structlog.get_logger(__name__)
 
 
+class MessageType(StrEnum):
+    TEXT = "text"
+    AUDIO = "audio"
+    VIDEO = "video"
+
+
 @dataclass
 class Message:
+    type: MessageType
     sender: str
     content: bytes
 
 
 class Client:
-    """A threaded pub-sub client"""
+    """A threaded pub-sub client."""
 
     def __init__(
         self,
@@ -26,7 +33,6 @@ class Client:
     ):
         self.context = zmq.Context()
         self.topic = topic.encode()
-        self.username = getuser()
         self.pub_socket = self.context.socket(zmq.PUB)
         self.sub_socket = self.context.socket(zmq.SUB)
         self.sub_socket.setsockopt(zmq.SUBSCRIBE, self.topic)
@@ -45,15 +51,18 @@ class Client:
         """Starts a background thread to receive messages."""
         self.thread.start()
 
+    def send(self, msg: Message):
+        """Send `msg` to the broker."""
+        full_msg = [self.topic, msg.sender.encode(), msg.type.encode(), msg.content]
+        self.pub_socket.send_multipart(full_msg)
+        logger.debug("Sent message", msg=full_msg)
+
     def _recv_loop(self):
         while True:
             raw_msg = self.sub_socket.recv_multipart()
-            msg = Message(sender=raw_msg[1].decode(), content=raw_msg[2])
+            sender = raw_msg[1].decode()
+            msg_type = MessageType(raw_msg[2].decode())
+            content = raw_msg[3]
+            msg = Message(type=msg_type, sender=sender, content=content)
             logger.info("Received message", msg=msg)
             self.on_message_received(msg)
-
-    def publish(self, content: bytes):
-        """Publish a message with `content`."""
-        full_msg = [self.topic, self.username.encode(), content]
-        self.pub_socket.send_multipart(full_msg)
-        logger.debug("Sent message", msg=full_msg)
