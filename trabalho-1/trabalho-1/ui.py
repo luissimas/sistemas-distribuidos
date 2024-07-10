@@ -1,23 +1,24 @@
 from threading import Thread
 from tkinter import (
-    E,
     END,
     LEFT,
-    N,
-    S,
-    W,
     Button,
+    E,
     Entry,
     Event,
     Frame,
     Label,
+    N,
+    S,
     Tk,
+    W,
     mainloop,
 )
-from client import Client
-from PIL import ImageTk, Image
-from cv2 import VideoCapture, cvtColor, COLOR_BGR2RGBA
+
 import structlog
+from client import Client
+from cv2 import COLOR_BGR2RGBA, VideoCapture, cvtColor
+from PIL import Image, ImageTk
 
 logger = structlog.get_logger()
 

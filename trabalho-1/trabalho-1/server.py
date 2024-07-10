@@ -1,11 +1,11 @@
-import zmq
 import structlog
+import zmq
 
 logger = structlog.get_logger()
 context = zmq.Context()
-topic = b"messages"
+topic = b"room"
 
-logger.info("Binding to sockets")
+logger.info("Binding to sockets", topic=topic)
 
 pub_socket = context.socket(zmq.PUB)
 sub_socket = context.socket(zmq.SUB)
@@ -15,5 +15,5 @@ sub_socket.setsockopt(zmq.SUBSCRIBE, topic)
 
 while True:
     msg = sub_socket.recv_multipart()
-    logger.debug("Received message", msg=msg)
+    logger.info("Received message", msg=msg)
     pub_socket.send_multipart(msg)
