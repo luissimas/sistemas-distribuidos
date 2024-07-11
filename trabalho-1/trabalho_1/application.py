@@ -3,10 +3,33 @@ from getpass import getuser
 from typing import Callable
 
 import structlog
+from PIL import ImageTk
 
 from trabalho_1.client import Client, Message, MessageType
+from trabalho_1.video_capture import VideoCapture
 
 logger = structlog.get_logger(__name__)
+
+
+class Video(tk.Frame):
+    """The video display user interface."""
+
+    def __init__(self, master: tk.Tk):
+        super().__init__(master=master, borderwidth=1, padx=10, pady=10, bg="red")
+        self.grid(row=0, column=0, sticky=tk.E + tk.W + tk.N + tk.S)
+        self.camera = tk.Label(master=self)
+        self.camera.grid(row=0, column=0)
+        self.capture = VideoCapture()
+        self.capture_video()
+
+    # TODO: instead of capturing video directly, display streams from
+    # zeromq sockets
+    def capture_video(self):
+        image = self.capture.capture_frame()
+        image = ImageTk.PhotoImage(image)
+        self.camera.image = image
+        self.camera.configure(image=image)
+        self.camera.after(10, self.capture_video)
 
 
 class Chat(tk.Frame):
@@ -50,7 +73,15 @@ class Application:
             topic=topic,
             on_message_received=self._handle_received_message,
         )
+
+        # Application UI components
         self.chat = Chat(self.root, send_message=self._handle_send_message)
+        self.video = Video(self.root)
+
+        # Application layout
+        self.root.columnconfigure(0, weight=3)
+        self.root.columnconfigure(1, weight=1)
+        self.root.rowconfigure(0, weight=1)
 
     def start(self):
         """Start the application main loop."""
