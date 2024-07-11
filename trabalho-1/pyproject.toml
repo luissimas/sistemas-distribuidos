@@ -2,3 +2,23 @@
 exclude=[ ".venv" ]
 venvPath="."
 venv=".venv"
+
+[tool.poetry]
+name = "trabalho-1"
+version = "0.1.0"
+description = "A video chat application."
+authors = ["Luís Simas <luissimas@protonmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+structlog = "^24.2.0"
+pyzmq = "^26.0.3"
+typer = "^0.12.3"
+
+[tool.poetry.scripts]
+sd-trabalho-1 = 'trabalho_1.main:app'
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

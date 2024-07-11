@@ -3,7 +3,8 @@ from getpass import getuser
 from typing import Callable
 
 import structlog
-from client import Client, Message, MessageType
+
+from trabalho_1.client import Client, Message, MessageType
 
 logger = structlog.get_logger(__name__)
 
@@ -40,13 +41,13 @@ class Chat(tk.Frame):
 class Application:
     """The main application."""
 
-    def __init__(self, broker_address: str):
+    def __init__(self, broker_address: str, topic: str):
         self.root = tk.Tk()
         self.username = getuser()
         self.broker_address = broker_address
         self.client = Client(
             broker_address=broker_address,
-            topic="room",
+            topic=topic,
             on_message_received=self._handle_received_message,
         )
         self.chat = Chat(self.root, send_message=self._handle_send_message)

@@ -1,30 +1,37 @@
 # Trabalho 1
 
-Google meet clone
-
+A video chat application.
 
 ## Getting started
 
-Creating the virtual environment
+This project uses [Poetry](https://python-poetry.org/) to manage its dependencies and development environment. For instructions on how to install Poetry, refer to their [documentation](https://python-poetry.org/docs/#installation).
+
+Install the project and its dependencies:
 
 ```sh
-python -m venv .venv
+poetry install
 ```
 
-Installing dependencies
+Enter a shell with the project's virtual environment:
 
 ```sh
-.venv/bin/pip install -r requirements.txt
+poetry shell
 ```
 
-Running the server
+Run the server:
 
 ```sh
-.venv/bin/python ./trabalho-1/server.py
+sd-trabalho-1 server
 ```
 
-Running the client
+Run the client:
 
 ```sh
-.venv/bin/python ./trabalho-1/client.py
+sd-trabalho-1 client
+```
+
+For more details on how to run the applications and what options are supported, refer to the CLI's help:
+
+```sh
+sd-trabalho-1 --help
 ```
