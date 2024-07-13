@@ -1,5 +1,7 @@
-from typing import Annotated
+from threading import Thread
+from typing import Annotated, List
 
+import structlog
 from typer import Option, Typer
 
 from trabalho_1.application import Application
@@ -7,7 +9,7 @@ from trabalho_1.server import Server
 
 app = Typer()
 
-topic = "room"
+logger = structlog.get_logger(__name__)
 
 
 @app.command(help="Run the client GUI application.")
@@ -16,12 +18,26 @@ def client(
         str, Option(help="The IP address or hostname of the message broker.")
     ] = "127.0.0.1"
 ):
-    application = Application(broker_address=broker_address, topic=topic)
+    application = Application(broker_address=broker_address)
     application.start()
 
 
 @app.command(help="Run the message broker server.")
 def server():
-    server = Server(topic=topic)
-    server.bind()
-    server.start()
+    threads: List[Thread] = []
+    server_spec = [
+        ("text", 4000, 4001),
+        ("video", 4002, 4003),
+        ("audio", 4004, 4005),
+    ]
+    for topic, pub_port, sub_port in server_spec:
+        logger.info(
+            "Starting server", topic=topic, pub_port=pub_port, sub_port=sub_port
+        )
+        server = Server(topic=topic, pub_port=pub_port, sub_port=sub_port)
+        server.bind()
+        server.start()
+        threads.append(server.thread)
+
+    for thread in threads:
+        thread.join()
