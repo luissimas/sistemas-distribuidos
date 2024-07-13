@@ -20,7 +20,7 @@ class Video(tk.Frame):
     """The video display user interface."""
 
     def __init__(self, master: tk.Tk, video_queue: Queue[Image.Image]):
-        super().__init__(master=master, borderwidth=1, padx=10, pady=10, bg="red")
+        super().__init__(master=master, borderwidth=1, padx=10, pady=10)
         self.grid(row=0, column=0, sticky=tk.E + tk.W + tk.N + tk.S)
         self.video_queue = video_queue
         self.camera = tk.Label(master=self)
@@ -29,21 +29,20 @@ class Video(tk.Frame):
 
     def display_image(self):
         if not self.video_queue.empty():
-            logger.info("Video queue empty, skipping update")
             image = self.video_queue.get()
             image = ImageTk.PhotoImage(image)
             self.camera.image = image
             self.camera.configure(image=image)
-        self.camera.after(10, self.display_image)
+        self.camera.after(30, self.display_image)
 
 
 class Chat(tk.Frame):
     """The chat user interface."""
 
     def __init__(self, master: tk.Tk, send_message: Callable[[str], None]):
-        super().__init__(master=master, borderwidth=1, padx=10, pady=10, bg="blue")
+        super().__init__(master=master, borderwidth=1, padx=10, pady=10)
         super().grid(row=0, column=1, sticky=tk.E + tk.W + tk.N + tk.S)
-        self.message_list = tk.Label(master=self, justify=tk.LEFT)
+        self.message_list = tk.Label(master=self, justify=tk.LEFT, wraplength=300)
         self.message_entry = tk.Entry(master=self)
         self.message_entry.bind(
             "<Return>", lambda _: self._handle_message_entry_submit()

@@ -27,4 +27,4 @@ class VideoCapture:
             _, frame = self.capture.read()
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
             self.on_frame_captured(Image.fromarray(image))
-            sleep(0.01)
+            sleep(0.03)
