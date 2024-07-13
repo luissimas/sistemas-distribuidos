@@ -1,3 +1,4 @@
+from getpass import getuser
 from threading import Thread
 from typing import Annotated, List
 
@@ -16,9 +17,12 @@ logger = structlog.get_logger(__name__)
 def client(
     broker_address: Annotated[
         str, Option(help="The IP address or hostname of the message broker.")
-    ] = "127.0.0.1"
+    ] = "127.0.0.1",
+    username: Annotated[
+        str, Option(help="The username to use on the room.")
+    ] = getuser(),
 ):
-    application = Application(broker_address=broker_address)
+    application = Application(broker_address=broker_address, username=username)
     application.start()
 
 

@@ -1,14 +1,15 @@
 import logging
 import tkinter as tk
-from getpass import getuser
+from dataclasses import dataclass
+from datetime import datetime
 from io import BytesIO
 from queue import Queue
-from typing import Callable
+from time import time
+from typing import Callable, Dict, Tuple
 
 import structlog
 from PIL import Image, ImageTk
 
-from trabalho_1 import video_capture
 from trabalho_1.client import Client, Message
 from trabalho_1.video_capture import VideoCapture
 
@@ -16,24 +17,67 @@ structlog.configure(wrapper_class=structlog.make_filtering_bound_logger(logging.
 logger = structlog.get_logger(__name__)
 
 
+@dataclass
+class User:
+    last_seen: datetime
+    video_label: tk.Label
+
+
 class Video(tk.Frame):
     """The video display user interface."""
 
-    def __init__(self, master: tk.Tk, video_queue: Queue[Image.Image]):
+    def __init__(self, master: tk.Tk, video_queue: Queue[Tuple[str, Image.Image]]):
         super().__init__(master=master, borderwidth=1, padx=10, pady=10)
         self.grid(row=0, column=0, sticky=tk.E + tk.W + tk.N + tk.S)
         self.video_queue = video_queue
-        self.camera = tk.Label(master=self)
-        self.camera.grid(row=0, column=0)
-        self.display_image()
+        self.users: Dict[str, User] = {}
+        self.display_videos()
+        self.user_inactivity_threshold = 2
 
-    def display_image(self):
-        if not self.video_queue.empty():
-            image = self.video_queue.get()
-            image = ImageTk.PhotoImage(image)
-            self.camera.image = image
-            self.camera.configure(image=image)
-        self.camera.after(30, self.display_image)
+    def display_videos(self):
+        while not self.video_queue.empty():
+            name, image = self.video_queue.get()
+            user = self.users.get(name)
+            if user is None:
+                user = User(last_seen=datetime.now(), video_label=tk.Label(master=self))
+                self.users[name] = user
+            else:
+                user.last_seen = datetime.now()
+            self._display_image(self.users[name].video_label, image)
+        self._clear_inactive()
+        self._draw_grid()
+        self.master.after(30, self.display_videos)
+
+    def _clear_inactive(self):
+        active_users = {}
+        for name, user in self.users.items():
+            if (
+                datetime.now() - user.last_seen
+            ).seconds >= self.user_inactivity_threshold:
+                logger.info("Removing inactive user", user=name)
+                user.video_label.grid_forget()
+            else:
+                active_users[name] = user
+
+        self.users = active_users
+        self._draw_grid()
+
+    def _draw_grid(self):
+        self.pack_forget()
+        row = 0
+        column = 0
+        size = len(self.users) // 2
+        for user in self.users.values():
+            user.video_label.grid(row=row, column=column)
+            if column > size:
+                column = 0
+                row += 1
+            else:
+                column += 1
+
+    def _display_image(self, label: tk.Label, image: Image.Image):
+        label.image = ImageTk.PhotoImage(image)
+        label.configure(image=label.image)
 
 
 class Chat(tk.Frame):
@@ -68,9 +112,9 @@ class Chat(tk.Frame):
 class Application:
     """The main application."""
 
-    def __init__(self, broker_address: str):
+    def __init__(self, broker_address: str, username: str):
         self.root = tk.Tk()
-        self.username = getuser()
+        self.username = username
         # Clients to comunicate with the broker
         self.broker_address = broker_address
         self.text_client = Client(
@@ -90,7 +134,7 @@ class Application:
 
         # Video capture device
         self.video_capture = VideoCapture(on_frame_captured=self._handle_frame_captured)
-        self.video_queue: Queue[Image.Image] = Queue()
+        self.video_queue: Queue[Tuple[str, Image.Image]] = Queue()
 
         # Application UI components
         self.chat = Chat(self.root, send_message=self._handle_send_message)
@@ -119,7 +163,7 @@ class Application:
     def _handle_received_video(self, msg: Message):
         stream = BytesIO(msg.content)
         image = Image.open(stream)
-        self.video_queue.put(image)
+        self.video_queue.put((msg.sender, image))
 
     def _handle_frame_captured(self, frame: Image.Image):
         image = BytesIO()
