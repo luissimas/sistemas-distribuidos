@@ -16,7 +16,7 @@ class VideoCapture:
     ) -> None:
         self.capture = cv2.VideoCapture(device)
         self.on_frame_captured = on_frame_captured
-        self.thread = Thread(target=self._capture_loop)
+        self.thread = Thread(target=self._capture_loop, daemon=True)
 
     def start_capturing(self):
         """Starts a background thread to capture frames."""

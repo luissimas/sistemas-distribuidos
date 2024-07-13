@@ -34,7 +34,7 @@ class Client:
         self.pub_address = f"tcp://{broker_address}:{pub_port}"
         self.sub_address = f"tcp://{broker_address}:{sub_port}"
         self.on_message_received = on_message_received
-        self.thread = Thread(target=self._recv_loop)
+        self.thread = Thread(target=self._recv_loop, daemon=True)
 
     def connect(self):
         """Connects the client to the broker."""

@@ -2,11 +2,13 @@ import logging
 import tkinter as tk
 from getpass import getuser
 from io import BytesIO
+from queue import Queue
 from typing import Callable
 
 import structlog
 from PIL import Image, ImageTk
 
+from trabalho_1 import video_capture
 from trabalho_1.client import Client, Message
 from trabalho_1.video_capture import VideoCapture
 
@@ -17,16 +19,22 @@ logger = structlog.get_logger(__name__)
 class Video(tk.Frame):
     """The video display user interface."""
 
-    def __init__(self, master: tk.Tk):
+    def __init__(self, master: tk.Tk, video_queue: Queue[Image.Image]):
         super().__init__(master=master, borderwidth=1, padx=10, pady=10, bg="red")
         self.grid(row=0, column=0, sticky=tk.E + tk.W + tk.N + tk.S)
+        self.video_queue = video_queue
         self.camera = tk.Label(master=self)
         self.camera.grid(row=0, column=0)
+        self.display_image()
 
-    def show_frame(self, image: Image.Image):
-        image = ImageTk.PhotoImage(image)
-        self.camera.image = image
-        self.camera.configure(image=image)
+    def display_image(self):
+        if not self.video_queue.empty():
+            logger.info("Video queue empty, skipping update")
+            image = self.video_queue.get()
+            image = ImageTk.PhotoImage(image)
+            self.camera.image = image
+            self.camera.configure(image=image)
+        self.camera.after(10, self.display_image)
 
 
 class Chat(tk.Frame):
@@ -83,10 +91,11 @@ class Application:
 
         # Video capture device
         self.video_capture = VideoCapture(on_frame_captured=self._handle_frame_captured)
+        self.video_queue: Queue[Image.Image] = Queue()
 
         # Application UI components
         self.chat = Chat(self.root, send_message=self._handle_send_message)
-        self.video = Video(self.root)
+        self.video = Video(self.root, video_queue=self.video_queue)
 
         # Application layout
         self.root.columnconfigure(0, weight=3)
@@ -109,10 +118,9 @@ class Application:
         self.chat.append_message(msg)
 
     def _handle_received_video(self, msg: Message):
-        logger.info("Received video frame", sender=msg.sender)
         stream = BytesIO(msg.content)
         image = Image.open(stream)
-        self.video.show_frame(image)
+        self.video_queue.put(image)
 
     def _handle_frame_captured(self, frame: Image.Image):
         image = BytesIO()
