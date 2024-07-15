@@ -12,6 +12,8 @@ from PIL import Image, ImageTk
 
 from trabalho_1.client import Client, Message
 from trabalho_1.video_capture import VideoCapture
+from trabalho_1.audio_capture import AudioCapture
+from trabalho_1.audio_player import AudioPlayer
 
 structlog.configure(wrapper_class=structlog.make_filtering_bound_logger(logging.INFO))
 logger = structlog.get_logger(__name__)
@@ -131,10 +133,22 @@ class Application:
             pub_port=4003,
             on_message_received=self._handle_received_video,
         )
+        self.audio_client = Client(
+            broker_address=broker_address,
+            topic="audio",
+            sub_port=4004,
+            pub_port=4005,
+            on_message_received=self._handle_received_audio,
+        )
 
         # Video capture device
         self.video_capture = VideoCapture(on_frame_captured=self._handle_frame_captured)
         self.video_queue: Queue[Tuple[str, Image.Image]] = Queue()
+
+        # Audio capture device
+        self.audio_capture = AudioCapture(on_audio_captured=self._handle_audio_captured)
+        self.audio_player = AudioPlayer()
+        self.audio_player.start_playing()
 
         # Application UI components
         self.chat = Chat(self.root, send_message=self._handle_send_message)
@@ -145,15 +159,29 @@ class Application:
         self.root.columnconfigure(1, weight=1)
         self.root.rowconfigure(0, weight=1)
 
+
     def start(self):
-        """Start the application main loop."""
-        logger.info(
-            "Starting the main application.", broker_address=self.broker_address
-        )
+        logger.info("Starting the main application.", broker_address=self.broker_address)
+        # Conexão e recepção do cliente de texto
         self.text_client.connect()
-        self.video_client.connect()
         self.text_client.start_receiving()
-        self.video_client.start_receiving()
+        logger.info("Text client started.")
+        
+        # Conexão e recepção do cliente de vídeo
+        self.video_client.connect()
+        self.video_client.start_receiving()    
+        logger.info("Video client started.")
+        
+        # Conexão e recepção do cliente de áudio
+        self.audio_client.connect()
+        self.audio_client.start_receiving()
+        logger.info("Audio client started.")
+        
+        # Captura de áudio
+        self.audio_capture.start_capturing()
+        logger.info("Audio capturing started.")
+
+        #Captura de Video
         self.video_capture.start_capturing()
         self.root.mainloop()
 
@@ -165,12 +193,24 @@ class Application:
         image = Image.open(stream)
         self.video_queue.put((msg.sender, image))
 
+    def _handle_received_audio(self, msg: Message):
+        logger.debug("Handling received audio message", sender=msg.sender, data_length=len(msg.content))
+        if msg.sender != self.username:
+            self.audio_player.add_audio_data(msg.content)
+
     def _handle_frame_captured(self, frame: Image.Image):
         image = BytesIO()
         # TODO: use a more appropriate format
         frame.save(image, format="PNG")
         msg = Message(sender=self.username, content=image.getvalue())
         self.video_client.send(msg)
+
+
+    def _handle_audio_captured(self, audio_data: bytes):
+        logger.debug("Handling captured audio data", data_length=len(audio_data))
+        msg = Message(sender=self.username, content=audio_data)
+        self.audio_client.send(msg)
+
 
     def _handle_send_message(self, content: str):
         msg = Message(sender=self.username, content=content.encode())
