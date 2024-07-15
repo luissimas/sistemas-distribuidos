@@ -5,6 +5,12 @@ Trabalhos e exercícios desenvolvidos ao longo da disciplina de Sistemas Distrib
 ## Integrantes
 
 Luís Augusto Simas do Nascimento - 790828
+
+
 Letícia Suellen Farias Machado - 790945
+
+
 Victor Vendrera Vieira - 801645
-TODO
+
+
+Caroline Elisa Duarte de Souza - 795565
