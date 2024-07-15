@@ -2,6 +2,19 @@
 
 A video chat application.
 
+## Integrantes
+
+Luís Augusto Simas do Nascimento - 790828
+
+
+Letícia Suellen Farias Machado - 790945
+
+
+Victor Vendrera Vieira - 801645
+
+
+Caroline Elisa Duarte de Souza - 795565
+
 ## Installing
 
 The only recommended and supported method of installation is with [pipx](https://github.com/pypa/pipx).
