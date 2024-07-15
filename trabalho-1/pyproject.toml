@@ -17,6 +17,7 @@ pyzmq = "^26.0.3"
 typer = "^0.12.3"
 opencv-python = "^4.10.0.84"
 pillow = "^10.4.0"
+pyaudio = "^0.2.14"
 
 [tool.poetry.scripts]
 sd-trabalho-1 = 'trabalho_1.main:app'
