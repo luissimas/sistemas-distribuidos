@@ -1,0 +1,50 @@
+# Markdown files
+*.md
+
+# Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info
+*.log
+
+# Virtual environments
+venv/
+.env/
+.venv/
+
+# Bytecode and compiled files
+*.so
+*.o
+*.a
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Git and other version control files
+.git/
+.gitignore
+*.swp
+
+# Docker files
+Dockerfile*
+.dockerignore
+
+# Node.js and frontend (if applicable)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Application output (logs, cache, etc.)
+*.log
+logs/
+cache/
+tmp/
+
+# Ignore IDE/editor config files
+.vscode/
+.idea/

@@ -1,0 +1,21 @@
+services:
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TARGET: consumer.py
+    environment:
+      DISTRIBUTOR_URL: http://distributor
+      CONSUME_RATE: 4
+    depends_on:
+      - distributor
+
+  distributor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TARGET: distributor.py
+    ports:
+      - "5000:5000"
