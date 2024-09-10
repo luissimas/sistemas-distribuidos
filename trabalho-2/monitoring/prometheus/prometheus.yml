@@ -8,4 +8,4 @@ scrape_configs:
       - targets: ["localhost:9090"]
   - job_name: "distributor"
     static_configs:
-      - targets: ["distributor:5000"]
+      - targets: ["distributor:80"]
