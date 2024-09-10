@@ -1,5 +1,10 @@
+volumes:
+  prometheus-data: {}
+  grafana-data: {}
+
 services:
   consumer:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,12 +15,33 @@ services:
       CONSUME_RATE: 4
     depends_on:
       - distributor
-
   distributor:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile
       args:
         TARGET: distributor.py
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    volumes:
+      - prometheus-data:/prometheus
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+  grafana:
+    image: grafana/grafana
+    restart: unless-stopped
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
     ports:
-      - "5000:5000"
+      - 3000:3000
+    depends_on:
+      - prometheus
