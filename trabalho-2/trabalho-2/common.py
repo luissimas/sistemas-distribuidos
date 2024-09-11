@@ -29,3 +29,6 @@ def get_env(name: str) -> str:
         logger.error("Missing required environment variable", name=name)
         exit(1)
     return value
+
+
+PRODUCT_IDS = [1, 2, 3, 4, 5]
