@@ -23,6 +23,7 @@ def on_message(client, userdata, msg):
     logger.info("Producing products", amount=quantidade, product_id=produto_id)
     time.sleep(randrange(2, 10))  # Simula tempo de produção
     client.publish("fabrica2/produzido", f"{produto_id}:{quantidade}")
+    logger.info("Products produced products", amount=quantidade, product_id=produto_id)
 
 
 client = mqtt.Client()

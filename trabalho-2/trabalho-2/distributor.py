@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from http import HTTPStatus
 
 import uvicorn
-from common import PRODUCT_IDS, get_env, pending_request_key, product_key
+from common import PRODUCT_IDS, get_env, product_key
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Response
 from paho.mqtt.client import Client
 from prometheus_client import Gauge, Summary, make_asgi_app
@@ -14,6 +14,7 @@ logger = get_logger(__name__)
 
 
 STOCK_THRESHOLD = int(get_env("STOCK_THRESHOLD"))
+REQUEST_SIZE = int(get_env("REQUEST_SIZE"))
 
 db = AsyncRedis(host="redis", port=6379, decode_responses=True)
 sync_db = SyncRedis(host="redis", port=6379, decode_responses=True)
@@ -55,13 +56,7 @@ product_request_duration = Summary(
 async def request_production(product_id: int):
     """Request production of more products of `product_id`."""
     logger.info("Requesting production", product_id=product_id)
-    pending_request = await db.set(pending_request_key(product_id), 1, get=True)
-    if pending_request:
-        logger.info(
-            "A request for the product is already in progress", product_id=product_id
-        )
-        return
-    request = f"{product_id}:5"
+    request = f"{product_id}:{REQUEST_SIZE}"
     broker.publish("distribuidor/pedido", request)
 
 
