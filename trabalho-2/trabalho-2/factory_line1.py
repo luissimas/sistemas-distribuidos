@@ -1,31 +1,33 @@
 import time
 
 import paho.mqtt.client as mqtt
+from common import PRODUCT_IDS, get_env
+from structlog import get_logger
 
-LINHAS = 5
-QUANTIDADE_PRODUTOS = 48
-
-
-def on_connect(client, userdata, flags, rc):
-    print("Fábrica 1 conectada ao broker")
+logger = get_logger(__name__)
 
 
-def produzir():
-    produtos = ["produto1", "produto2", "produto3", "produto4", "produto5"]
-    for produto in produtos:
-        total_produtos = LINHAS * QUANTIDADE_PRODUTOS
-        print(f"Fábrica 1 produzindo {total_produtos} unidades do {produto}")
-        client.publish("fabrica1/produzido", f"{produto}:{total_produtos}")
-        time.sleep(2)  # Simula tempo de produção
+def on_connect(_client, _userdata, _flags, _rc):
+    logger.info("Connected to broker")
 
 
-client = mqtt.Client()
-client.on_connect = on_connect
+def produzir(total_produtos):
+    amount = total_produtos / len(PRODUCT_IDS)
+    for product_id in PRODUCT_IDS:
+        logger.info("Producing products", amount=amount, product_id=product_id)
+        client.publish("fabrica1/produzido", f"{product_id}:{amount}")
+        time.sleep(2)
 
-client.connect("mosquitto", 1883, 60)
 
-client.loop_start()
+if __name__ == "__main__":
+    client = mqtt.Client()
+    client.on_connect = on_connect
 
-while True:
-    produzir()
-    time.sleep(10)  # Delay entre ciclos de produção
+    client.connect("mosquitto", 1883, 60)
+    client.loop_start()
+
+    production_rate = int(get_env("PRODUCTION_RATE"))
+
+    while True:
+        produzir(production_rate)
+        time.sleep(60)

@@ -14,7 +14,7 @@ services:
         TARGET: consumer.py
     environment:
       DISTRIBUTOR_URL: http://distributor
-      CONSUME_RATE: 4
+      CONSUME_RATE: 20
     depends_on:
       - distributor
 
@@ -27,6 +27,7 @@ services:
         TARGET: distributor.py
     environment:
       PORT: 80
+      STOCK_THRESHOLD: 20
     ports:
       - 5000:80
     depends_on:
@@ -40,6 +41,8 @@ services:
       dockerfile: Dockerfile
       args:
         TARGET: factory_line1.py
+    environment:
+      PRODUCTION_RATE: 10
     depends_on:
       - mosquitto
 
