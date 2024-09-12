@@ -1,5 +1,3 @@
-import time
-import paho.mqtt.client as mqtt
 from contextlib import asynccontextmanager
 from http import HTTPStatus
 
@@ -12,10 +10,8 @@ from structlog import get_logger
 
 logger = get_logger(__name__)
 
-# Configuração do Redis
 db = Redis(host="redis", port=6379, decode_responses=True)
 
-# Métricas
 product_stock = Gauge(
     "distributor_product_count",
     "The total number of products available in stock for prompt delivery",
@@ -25,46 +21,15 @@ product_request_duration = Summary(
     "distributor_product_request_duration", "Duration of requests for products"
 )
 
-# Configuração do MQTT
-client = mqtt.Client()
 
-def on_connect(client, userdata, flags, rc):
-    logger.info("Distribuidor conectado ao broker")
-    client.subscribe("fabrica1/produzido")
-    client.subscribe("fabrica2/produzido")
+async def request_production(product_id: int):
+    """Request production of more products of `product_id`."""
+    logger.info("Requesting production", product_id=product_id)
+    # TODO: check if no more requests are pending
+    # TODO: put message in MQTT queue
+    # TODO: consume from the queue somehow
+    ...
 
-def on_message(client, userdata, msg):
-    if msg.topic == "fabrica1/produzido":
-        mensagem = msg.payload.decode()
-        produto, quantidade = mensagem.split(':')
-        estoque_atual = await db.get(product_key(produto))
-        novo_estoque = (int(estoque_atual) if estoque_atual else 0) + int(quantidade)
-        await db.set(product_key(produto), novo_estoque)
-        logger.info(f"Distribuidor recebeu da Fábrica 1: {quantidade} unidades de {produto}")
-        print_estoque()
-    elif msg.topic == "fabrica2/produzido":
-        mensagem = msg.payload.decode()
-        produto, quantidade = mensagem.split(':')
-        estoque_atual = await db.get(product_key(produto))
-        novo_estoque = (int(estoque_atual) if estoque_atual else 0) + int(quantidade)
-        await db.set(product_key(produto), novo_estoque)
-        logger.info(f"Distribuidor recebeu da Fábrica 2: {quantidade} unidades de {produto}")
-        print_estoque()
-
-def solicitar_pedido():
-    produto_id = random.randint(1, 5)
-    quantidade = random.randint(20, 100)
-    pedido = f"{produto_id}:{quantidade}"
-    logger.info(f"Distribuidor solicitando {quantidade} unidades do produto {produto_id} da Fábrica 2")
-    client.publish("distribuidor/pedido", pedido)
-    time.sleep(5)  # Delay para simular processo de pedido
-
-async def print_estoque():
-    logger.info("Estoque de Produtos:")
-    for product_id in PRODUCT_IDS:
-        key = product_key(product_id)
-        quantidade = await db.get(key)
-        logger.info(f"{product_id}: {quantidade if quantidade else 0} unidades")
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -82,7 +47,9 @@ async def lifespan(_app: FastAPI):
     logger.info("Initialization completed")
     yield
 
+
 app = FastAPI(lifespan=lifespan)
+
 
 @app.get("/product/{product_id}")
 async def get_product(product_id: int, background_tasks: BackgroundTasks):
@@ -101,15 +68,12 @@ async def get_product(product_id: int, background_tasks: BackgroundTasks):
 
         return Response(status_code=HTTPStatus.OK)
 
+
 app.mount("/metrics", make_asgi_app())
+
 
 if __name__ == "__main__":
     port = int(get_env("PORT"))
     host = "0.0.0.0"
     logger.info("Starting HTTP server", host=host, port=port)
-    client.on_connect = on_connect
-    client.on_message = on_message
-    client.connect("localhost", 1883, 60)
-    client.loop_start()
     uvicorn.run(app, host=host, port=port)
-

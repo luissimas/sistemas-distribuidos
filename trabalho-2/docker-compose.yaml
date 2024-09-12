@@ -1,12 +1,23 @@
-version: '3.8'
-
 volumes:
   prometheus-data: {}
   grafana-data: {}
   redis-data: {}
-  mqtt-data: {} 
+  mqtt-data: {}
 
 services:
+  consumer:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TARGET: consumer.py
+    environment:
+      DISTRIBUTOR_URL: http://distributor
+      CONSUME_RATE: 4
+    depends_on:
+      - distributor
+
   distributor:
     restart: unless-stopped
     build:
@@ -20,7 +31,7 @@ services:
       - 5000:80
     depends_on:
       - redis
-      - mosquitto 
+      - mosquitto
 
   factory_line1:
     restart: unless-stopped
@@ -30,7 +41,7 @@ services:
       args:
         TARGET: factory_line1.py
     depends_on:
-      - mosquitto  
+      - mosquitto
 
   factory_line2:
     restart: unless-stopped
@@ -40,7 +51,7 @@ services:
       args:
         TARGET: factory_line2.py
     depends_on:
-      - mosquitto  
+      - mosquitto
 
   supplier:
     restart: unless-stopped
@@ -50,7 +61,7 @@ services:
       args:
         TARGET: supplier.py
     depends_on:
-      - mosquitto 
+      - mosquitto
 
   mosquitto:
     image: eclipse-mosquitto:latest
@@ -58,8 +69,6 @@ services:
     volumes:
       - mqtt-data:/mosquitto/data
       - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
-    ports:
-      - "1883:1883"  
 
   prometheus:
     image: prom/prometheus:latest
@@ -91,4 +100,3 @@ services:
     restart: unless-stopped
     volumes:
       - redis-data:/data
-
