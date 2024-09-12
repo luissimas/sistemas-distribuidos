@@ -40,7 +40,7 @@ async def lifespan(_app: FastAPI):
         count = await db.get(key)
         if count is None:
             count = 100
-            db.set(key, count)
+            await db.set(key, count)
         else:
             count = int(count)
         product_stock.labels(product=product_id).set(count)
