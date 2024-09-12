@@ -6,21 +6,8 @@ from structlog import get_logger
 logger = get_logger(__name__)
 
 
-@dataclass
-class Product:
-    id: str
-
-
-@dataclass
-class Config:
-    """ """
-
-    day_duration: int
-
-
 def get_env(name: str) -> str:
     """Get the value for the env variable with `name`.
-
     If no value is found, log a message and exits the program with a
     non-zero status code.
     """
@@ -32,7 +19,6 @@ def get_env(name: str) -> str:
 
 
 PRODUCT_IDS = [1, 2, 3, 4, 5]
-STOCK_THRESHOLD = 10
 
 
 def product_key(product_id: int) -> str:
